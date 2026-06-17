@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>클라이밍 친구방</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background: #101820;
+    color: white;
+  }
+
+  .app {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(#17202b 0%, #111923 100%);
+  }
+
+  .login {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.55);
+  }
+
+  .login-card {
+    width: min(360px, calc(100vw - 32px));
+    padding: 24px;
+    border-radius: 8px;
+    background: #172230;
+    border: 1px solid rgba(255,255,255,.18);
+  }
+
+  .login-card h1 { margin: 0 0 10px; font-size: 24px; }
+  .login-card p { margin: 0 0 18px; color: #b8c2cc; font-size: 14px; line-height: 1.5; }
+
+  .login-card input {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,.2);
+    background: rgba(255,255,255,.08);
+    color: white;
+    outline: none;
+  }
+
+  .login-card button {
+    width: 100%;
+    height: 44px;
+    margin-top: 10px;
+    border: 0;
+    border-radius: 8px;
+    font-weight: 800;
+    cursor: pointer;
+    background: #68d8ff;
+    color: #071018;
+  }
+
+  .room-title {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    z-index: 5;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(0,0,0,.42);
+    border: 1px solid rgba(255,255,255,.14);
+    color: #dce7f2;
+    font-size: 13px;
+  }
+
+  .climb-wall {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 14%;
+    background:
+      linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(255,255,255,.05) 1px, transparent 1px),
+      linear-gradient(135deg, #303743, #202a35 55%, #1a222d);
+    background-size: 72px 72px, 72px 72px, auto;
+    border-bottom: 1px solid rgba(255,255,255,.18);
+  }
+
+  .climb-wall:before {
+    content: "BOULDERING ZONE";
+    position: absolute;
+    left: 24px;
+    bottom: 22px;
+    color: rgba(255,255,255,.13);
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: 2px;
+  }
+
+  .panel {
+    position: absolute;
+    top: 9%;
+    bottom: 10%;
+    width: 18%;
+    border-left: 1px solid rgba(255,255,255,.08);
+    border-right: 1px solid rgba(0,0,0,.18);
+    background: rgba(255,255,255,.035);
+  }
+
+  .panel.left { left: 8%; transform: skewX(-6deg); }
+  .panel.center { left: 35%; width: 24%; background: rgba(255,255,255,.05); }
+  .panel.right { right: 12%; transform: skewX(7deg); }
+
+  .hold {
+    position: absolute;
+    width: 34px;
+    height: 24px;
+    margin-left: -17px;
+    margin-top: -12px;
+    border-radius: 50% 45% 55% 40%;
+    box-shadow: inset 0 -5px rgba(0,0,0,.25), 0 7px 12px rgba(0,0,0,.2);
+    z-index: 2;
+  }
+
+  .hold.active {
+    outline: 3px solid rgba(255,255,255,.85);
+    box-shadow: 0 0 18px rgba(255,255,255,.45), inset 0 -5px rgba(0,0,0,.25);
+  }
+
+  .blue { background: #3aa7ff; }
+  .green { background: #5ee27f; }
+  .red { background: #ff5d6c; }
+  .yellow { background: #ffd166; }
+  .purple { background: #a78bfa; }
+  .white { background: #f8fafc; }
+
+  .floor {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 14%;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,.08) 0 1px, transparent 1px 120px),
+      linear-gradient(180deg, #475261, #303946);
+    border-top: 3px solid rgba(255,255,255,.18);
+  }
+
+  .mat-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(0,0,0,.22);
+  }
+
+  .m1 { left: 20%; }
+  .m2 { left: 40%; }
+  .m3 { left: 60%; }
+  .m4 { left: 80%; }
+
+  .crash-pad {
+    position: absolute;
+    bottom: 12%;
+    height: 28px;
+    border-radius: 8px 8px 0 0;
+    background: #566374;
+    border: 1px solid rgba(255,255,255,.15);
+    box-shadow: inset 0 8px rgba(255,255,255,.08);
+  }
+
+  .crash-pad.one { left: 6%; width: 180px; }
+  .crash-pad.two { left: 38%; width: 220px; }
+  .crash-pad.three { right: 7%; width: 190px; }
+
+  .player {
+    position: absolute;
+    left: 50%;
+    bottom: 15%;
+    width: 58px;
+    height: 92px;
+    transform: translateX(-50%);
+    z-index: 4;
+    filter: drop-shadow(0 12px 10px rgba(0,0,0,.25));
+  }
+
+  .player.hanging .body { border-color: #68d8ff; }
+
+  .player.hanging .arm.left {
+    top: 30px;
+    left: 5px;
+    height: 42px;
+    transform: rotate(-35deg);
+  }
+
+  .player.hanging .arm.right {
+    top: 30px;
+    right: 5px;
+    height: 42px;
+    transform: rotate(35deg);
+  }
+
+  .name {
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    transform: translateX(-50%);
+    margin-bottom: 7px;
+    padding: 4px 8px;
+    border-radius: 99px;
+    background: rgba(0,0,0,.55);
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .head {
+    position: absolute;
+    left: 11px;
+    top: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #111827;
+  }
+
+  .head:before,
+  .head:after {
+    content: "";
+    position: absolute;
+    top: 15px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #111827;
+  }
+
+  .head:before { left: 10px; }
+  .head:after { right: 10px; }
+
+  .body {
+    position: absolute;
+    left: 8px;
+    top: 34px;
+    width: 42px;
+    height: 40px;
+    border-radius: 16px 16px 12px 12px;
+    background: white;
+    border: 2px solid #111827;
+  }
+
+  .arm, .leg {
+    position: absolute;
+    background: white;
+    border: 2px solid #111827;
+  }
+
+  .arm {
+    top: 40px;
+    width: 14px;
+    height: 34px;
+    border-radius: 99px;
+  }
+
+  .arm.left { left: 0; transform: rotate(18deg); }
+  .arm.right { right: 0; transform: rotate(-18deg); }
+
+  .leg {
+    top: 70px;
+    width: 18px;
+    height: 26px;
+    border-radius: 99px;
+  }
+
+  .leg.left { left: 10px; }
+  .leg.right { right: 10px; }
+
+  .player.walking .arm.left,
+  .player.walking .leg.right {
+    animation: walkA .25s infinite alternate;
+  }
+
+  .player.walking .arm.right,
+  .player.walking .leg.left {
+    animation: walkB .25s infinite alternate;
+  }
+
+  @keyframes walkA { to { transform: rotate(-18deg); } }
+  @keyframes walkB { to { transform: rotate(18deg); } }
+
+  .chat-toggle {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    z-index: 11;
+    height: 38px;
+    padding: 0 13px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 8px;
+    background: rgba(15,23,42,.78);
+    color: white;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .chat {
+    position: absolute;
+    right: 16px;
+    top: 62px;
+    bottom: 16px;
+    width: min(330px, calc(100vw - 32px));
+    z-index: 8;
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, .7);
+    border: 1px solid rgba(255,255,255,.16);
+    overflow: hidden;
+    transition: opacity .2s ease, transform .2s ease, visibility .2s ease;
+  }
+
+  .chat.hidden {
+    opacity: 0;
+    transform: translateX(24px);
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .chat-head {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255,255,255,.14);
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .chat-head button {
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 8px;
+    background: rgba(255,255,255,.08);
+    color: white;
+    cursor: pointer;
+  }
+
+  .messages {
+    flex: 1;
+    padding: 10px;
+    overflow: auto;
+  }
+
+  .msg {
+    margin-bottom: 8px;
+    padding: 8px 9px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.08);
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .msg b {
+    display: block;
+    color: #8cf7c8;
+    font-size: 12px;
+    margin-bottom: 3px;
+  }
+
+  .msg.me {
+    background: rgba(104,216,255,.18);
+    margin-left: 24px;
+  }
+
+  .chat-form {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid rgba(255,255,255,.14);
+  }
+
+  .chat-form input {
+    flex: 1;
+    min-width: 0;
+    height: 38px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(255,255,255,.08);
+    color: white;
+    padding: 0 10px;
+    outline: none;
+  }
+
+  .chat-form button {
+    height: 38px;
+    border: 0;
+    border-radius: 8px;
+    padding: 0 12px;
+    font-weight: 800;
+    background: #68d8ff;
+    color: #071018;
+  }
+
+  .controls {
+    position: absolute;
+    left: 16px;
+    bottom: 18px;
+    z-index: 10;
+    display: none;
+    grid-template-columns: 58px 58px 58px 72px;
+    grid-template-rows: 58px 58px;
+    gap: 8px;
+  }
+
+  .controls button {
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 8px;
+    background: rgba(15,23,42,.78);
+    color: white;
+    font-size: 20px;
+    font-weight: 900;
+  }
+
+  .up { grid-column: 2; grid-row: 1; }
+  .left { grid-column: 1; grid-row: 2; }
+  .down { grid-column: 2; grid-row: 2; }
+  .right { grid-column: 3; grid-row: 2; }
+  .grab { grid-column: 4; grid-row: 1 / span 2; background: rgba(104,216,255,.24) !important; }
+
+  .guide {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    z-index: 5;
+    padding: 9px 12px;
+    border-radius: 99px;
+    background: rgba(0,0,0,.42);
+    color: #cbd5e1;
+    font-size: 12px;
+  }
+
+  @media (hover: none), (max-width: 760px) {
+    .controls { display: grid; }
+    .guide { display: none; }
+
+    .chat-toggle {
+      top: 58px;
+      right: 12px;
+    }
+
+    .chat {
+      left: 12px;
+      right: 12px;
+      top: auto;
+      bottom: 160px;
+      width: auto;
+      height: 210px;
+    }
+
+    .chat.hidden {
+      transform: translateY(20px);
+    }
+
+    .room-title { right: 12px; }
+
+    .climb-wall:before {
+      font-size: 25px;
+      left: 16px;
+      bottom: 20px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="login" id="login">
+    <div class="login-card">
+      <h1>클라이밍장 입장</h1>
+      <p>닉네임을 입력하면 친구들이 있는 2D 클라이밍장으로 입장합니다.</p>
+      <input id="nickname" placeholder="닉네임 입력" maxlength="12">
+      <button id="enterBtn">확인</button>
+    </div>
+  </div>
+
+  <div class="room-title" id="roomTitle">대기 중인 클라이밍장</div>
+
+  <button class="chat-toggle" id="chatToggle">채팅 숨기기</button>
+
+  <div class="climb-wall" id="wall">
+    <div class="panel left"></div>
+    <div class="panel center"></div>
+    <div class="panel right"></div>
+  </div>
+
+  <div class="crash-pad one"></div>
+  <div class="crash-pad two"></div>
+  <div class="crash-pad three"></div>
+
+  <div class="floor">
+    <div class="mat-line m1"></div>
+    <div class="mat-line m2"></div>
+    <div class="mat-line m3"></div>
+    <div class="mat-line m4"></div>
+  </div>
+
+  <div class="player" id="player">
+    <div class="name" id="playerName">나</div>
+    <div class="head"></div>
+    <div class="body"></div>
+    <div class="arm left"></div>
+    <div class="arm right"></div>
+    <div class="leg left"></div>
+    <div class="leg right"></div>
+  </div>
+
+  <aside class="chat" id="chatBox">
+    <div class="chat-head">
+      <span>채팅</span>
+      <button id="chatClose" type="button">x</button>
+    </div>
+    <div class="messages" id="messages">
+      <div class="msg"><b>시스템</b>Z 또는 잡기 버튼을 누르면 가까운 홀드를 잡습니다.</div>
+      <div class="msg"><b>친구1</b>잡기 떼면서 방향키 누르면 다음 홀드로 날아감!</div>
+    </div>
+    <form class="chat-form" id="chatForm">
+      <input id="chatInput" placeholder="메시지 입력">
+      <button>전송</button>
+    </form>
+  </aside>
+
+  <div class="controls">
+    <button class="up" id="btnUp">▲</button>
+    <button class="left" id="btnLeft">◀</button>
+    <button class="down" id="btnDown">▼</button>
+    <button class="right" id="btnRight">▶</button>
+    <button class="grab" id="btnGrab">잡기</button>
+  </div>
+
+  <div class="guide">← → 이동 / ↑ Space 점프 / ↓ 앉기 / Z 잡기 / C 채팅</div>
+</div>
+
+<script>
+  var wall = document.getElementById("wall");
+  var login = document.getElementById("login");
+  var nickname = document.getElementById("nickname");
+  var enterBtn = document.getElementById("enterBtn");
+  var roomTitle = document.getElementById("roomTitle");
+  var playerEl = document.getElementById("player");
+  var playerName = document.getElementById("playerName");
+  var messages = document.getElementById("messages");
+  var chatForm = document.getElementById("chatForm");
+  var chatInput = document.getElementById("chatInput");
+  var chatBox = document.getElementById("chatBox");
+  var chatToggle = document.getElementById("chatToggle");
+  var chatClose = document.getElementById("chatClose");
+
+  var name = "나";
+  var baseBottom = 0;
+  var x = window.innerWidth / 2;
+  var y = 0;
+  var vx = 0;
+  var vy = 0;
+  var grounded = true;
+  var hanging = false;
+  var currentHold = null;
+
+  var left = false;
+  var right = false;
+  var down = false;
+  var grab = false;
+  var facing = 1;
+  var upPressed = false;
+  var chatVisible = true;
+
+  var holds = [
+    {x: 16, y: 30, c: "blue"}, {x: 25, y: 45, c: "blue"}, {x: 34, y: 62, c: "blue"},
+    {x: 44, y: 38, c: "green"}, {x: 53, y: 56, c: "green"}, {x: 62, y: 74, c: "green"},
+    {x: 71, y: 42, c: "red"}, {x: 80, y: 60, c: "red"}, {x: 88, y: 78, c: "red"},
+    {x: 22, y: 72, c: "yellow"}, {x: 42, y: 82, c: "purple"}, {x: 58, y: 28, c: "white"},
+    {x: 76, y: 24, c: "yellow"}, {x: 14, y: 56, c: "purple"}, {x: 66, y: 52, c: "blue"}
+  ];
+
+  holds.forEach(function(h, i) {
+    var el = document.createElement("div");
+    el.className = "hold " + h.c;
+    el.style.left = h.x + "%";
+    el.style.top = h.y + "%";
+    el.dataset.index = i;
+    wall.appendChild(el);
+    h.el = el;
+  });
+
+  function setChatVisible(value) {
+    chatVisible = value;
+    chatBox.classList.toggle("hidden", !chatVisible);
+    chatToggle.textContent = chatVisible ? "채팅 숨기기" : "채팅 열기";
+  }
+
+  chatToggle.onclick = function() {
+    setChatVisible(!chatVisible);
+  };
+
+  chatClose.onclick = function() {
+    setChatVisible(false);
+  };
+
+  function getHoldScreen(h) {
+    var wallRect = wall.getBoundingClientRect();
+    return {
+      x: wallRect.left + wallRect.width * h.x / 100,
+      y: wallRect.top + wallRect.height * h.y / 100
+    };
+  }
+
+  function addMsg(who, text, mine) {
+    var div = document.createElement("div");
+    div.className = mine ? "msg me" : "msg";
+    div.innerHTML = "<b></b>" + text;
+    div.querySelector("b").textContent = who;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function enter() {
+    var value = nickname.value.trim();
+    if (!value) return;
+    name = value;
+    playerName.textContent = name;
+    roomTitle.textContent = name + "님의 클라이밍장";
+    login.style.display = "none";
+    addMsg("시스템", name + "님이 입장했습니다.", false);
+  }
+
+  enterBtn.onclick = enter;
+  nickname.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") enter();
+  });
+
+  function refreshBase() {
+    baseBottom = window.innerHeight * 0.15;
+  }
+
+  function playerHandPoint() {
+    return {
+      x: x,
+      y: window.innerHeight - baseBottom - y - 83
+    };
+  }
+
+  function tryGrab() {
+    if (grounded || hanging) return;
+
+    var hand = playerHandPoint();
+    var best = null;
+    var bestDist = 9999;
+
+    holds.forEach(function(h) {
+      var p = getHoldScreen(h);
+      var dx = p.x - hand.x;
+      var dy = p.y - hand.y;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = h;
+      }
+    });
+
+    if (best && bestDist < 62) {
+      var p = getHoldScreen(best);
+      hanging = true;
+      grounded = false;
+      currentHold = best;
+      vx = 0;
+      vy = 0;
+      x = p.x;
+      y = window.innerHeight - baseBottom - p.y - 83;
+      best.el.classList.add("active");
+    }
+  }
+
+  function releaseGrab() {
+    if (!hanging) return;
+
+    if (currentHold) currentHold.el.classList.remove("active");
+
+    hanging = false;
+    currentHold = null;
+
+    vx = 0;
+    if (left) vx -= 9;
+    if (right) vx += 9;
+
+    vy = 7;
+    if (left || right) vy = 10;
+    if (upPressed) vy = 16;
+  }
+
+  function jump() {
+    upPressed = true;
+    if (hanging) return;
+    if (grounded && !down) {
+      vy = 16;
+      grounded = false;
+    }
+  }
+
+  function setGrab(value) {
+    if (grab === value) return;
+    grab = value;
+    if (grab) tryGrab();
+    else releaseGrab();
+  }
+
+  document.addEventListener("keydown", function(e) {
+    if (e.target.tagName === "INPUT") return;
+
+    if (e.key === "ArrowLeft" || e.key === "a") left = true;
+    if (e.key === "ArrowRight" || e.key === "d") right = true;
+    if (e.key === "ArrowDown" || e.key === "s") down = true;
+    if (e.key === "ArrowUp" || e.key === "w" || e.key === " ") jump();
+    if (e.key === "z" || e.key === "Z" || e.key === "Shift") setGrab(true);
+    if (e.key === "c" || e.key === "C") setChatVisible(!chatVisible);
+  });
+
+  document.addEventListener("keyup", function(e) {
+    if (e.key === "ArrowLeft" || e.key === "a") left = false;
+    if (e.key === "ArrowRight" || e.key === "d") right = false;
+    if (e.key === "ArrowDown" || e.key === "s") down = false;
+    if (e.key === "ArrowUp" || e.key === "w" || e.key === " ") upPressed = false;
+    if (e.key === "z" || e.key === "Z" || e.key === "Shift") setGrab(false);
+  });
+
+  function holdButton(id, start, end) {
+    var btn = document.getElementById(id);
+    btn.addEventListener("pointerdown", function(e) {
+      e.preventDefault();
+      start();
+    });
+    btn.addEventListener("pointerup", function(e) {
+      e.preventDefault();
+      if (end) end();
+    });
+    btn.addEventListener("pointercancel", function() {
+      if (end) end();
+    });
+    btn.addEventListener("pointerleave", function() {
+      if (end) end();
+    });
+  }
+
+  holdButton("btnLeft", function(){ left = true; }, function(){ left = false; });
+  holdButton("btnRight", function(){ right = true; }, function(){ right = false; });
+  holdButton("btnDown", function(){ down = true; }, function(){ down = false; });
+  holdButton("btnUp", function(){ jump(); }, function(){ upPressed = false; });
+  holdButton("btnGrab", function(){ setGrab(true); }, function(){ setGrab(false); });
+
+  chatForm.addEventListener("submit", function(e) {
+    e.preventDefault();
+    var text = chatInput.value.trim();
+    if (!text) return;
+    addMsg(name, text, true);
+    chatInput.value = "";
+  });
+
+  function loop() {
+    refreshBase();
+
+    if (hanging && currentHold) {
+      var hp = getHoldScreen(currentHold);
+      x = hp.x;
+      y = window.innerHeight - baseBottom - hp.y - 83;
+    } else {
+      if (grounded) {
+        vx = 0;
+        if (!down) {
+          if (left) {
+            x -= 5;
+            facing = -1;
+          }
+          if (right) {
+            x += 5;
+            facing = 1;
+          }
+        }
+      } else {
+        if (left) {
+          vx -= 0.25;
+          facing = -1;
+        }
+        if (right) {
+          vx += 0.25;
+          facing = 1;
+        }
+
+        vx *= 0.985;
+        vx = Math.max(-10, Math.min(10, vx));
+        x += vx;
+
+        vy -= 0.62;
+        y += vy;
+
+        if (grab) tryGrab();
+
+        if (y <= 0) {
+          y = 0;
+          vy = 0;
+          vx = 0;
+          grounded = true;
+        }
+      }
+    }
+
+    x = Math.max(30, Math.min(window.innerWidth - 30, x));
+
+    var scaleY = down && grounded ? 0.72 : 1;
+    playerEl.style.left = x + "px";
+    playerEl.style.bottom = "15%";
+    playerEl.style.marginBottom = y + "px";
+    playerEl.style.transform = "translateX(-50%) scaleX(" + facing + ") scaleY(" + scaleY + ")";
+
+    if ((left || right) && grounded && !down) playerEl.classList.add("walking");
+    else playerEl.classList.remove("walking");
+
+    if (hanging) playerEl.classList.add("hanging");
+    else playerEl.classList.remove("hanging");
+
+    requestAnimationFrame(loop);
+  }
+
+  refreshBase();
+  loop();
+</script>
+</body>
+</html>
