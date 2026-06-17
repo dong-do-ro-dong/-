@@ -1,0 +1,12 @@
+{
+  "name": "climbing-friend-room",
+  "version": "1.0.0",
+  "private": true,
+  "main": "climbing-friend-room-server.js",
+  "scripts": {
+    "start": "node climbing-friend-room-server.js"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}
